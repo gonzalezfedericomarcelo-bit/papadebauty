@@ -1,0 +1,346 @@
+/* --- 1. VARIABLES Y RESET --- */
+:root {
+    --color-fondo: #FDFBF7;
+    --color-primario: #88B04B;    /* Verde */
+    --color-secundario: #92A8D1;  /* Azul */
+    --color-texto: #4A4A4A;       /* Gris oscuro */
+    --header-height: 70px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Verdana', sans-serif;
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    padding-top: var(--header-height);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+/* --- 2. HEADER Y MENÚ (HAMBURGUESA) --- */
+header {
+    background: white;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    justify-content: space-between; /* Separa Logo y Menú */
+}
+
+.logo {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--color-secundario);
+    display: flex; align-items: center; gap: 10px;
+    z-index: 1001;
+}
+
+/* Botón Hamburguesa (Móvil) */
+.hamburger {
+    display: none; /* Oculto en PC */
+    font-size: 1.8rem;
+    background: none; border: none; cursor: pointer;
+    color: var(--color-secundario);
+}
+
+/* Menú PC */
+.nav-links {
+    display: flex; gap: 20px;
+}
+
+.nav-links a {
+    color: #555; font-weight: bold; padding: 8px 12px;
+    transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--color-primario); }
+
+/* Menú Móvil (Responsive) */
+@media (max-width: 768px) {
+    .hamburger { display: block; } 
+
+    .nav-links {
+        display: none; /* Oculto por defecto */
+        position: absolute;
+        top: var(--header-height);
+        left: 0;
+        width: 100%;
+        background: white;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 0;
+        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    .nav-links.active { display: flex; } /* Se muestra al activar JS */
+    .nav-links li { margin: 15px 0; }
+}
+
+/* --- 3. JUEGOS (ESTILOS VIEJOS QUE NO PODEMOS PERDER) --- */
+.zona-juego {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px;
+    min-height: calc(100vh - var(--header-height));
+}
+
+#game-container {
+    width: 100%; max-width: 800px; height: 60vh;
+    background: white; border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Botones Grandes (Home y Juegos) */
+.btn-grande {
+    padding: 15px 30px; border-radius: 50px;
+    text-decoration: none; color: white !important;
+    font-weight: bold; display: inline-block;
+    margin: 5px; text-align: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+.btn-grande:active { transform: translateY(4px); box-shadow: none; }
+.btn-jugar { background: var(--color-primario); }
+.btn-padres { background: var(--color-secundario); }
+
+/* --- 4. NUEVO BLOG (GRILLA 3 COLUMNAS) --- */
+.contenedor-blog {
+    display: flex;
+    gap: 40px;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* Lado Izquierdo: Artículos */
+.blog-main {
+    flex: 3; /* Ocupa el 75% */
+    display: grid;
+    /* Esto crea las 3 columnas automáticas */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 30px;
+}
+
+/* Tarjeta de Artículo */
+.articulo-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: transform 0.3s;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid #f0f0f0;
+}
+.articulo-card:hover { transform: translateY(-5px); }
+
+.articulo-img-container {
+    height: 180px;
+    overflow: hidden;
+    position: relative;
+}
+.articulo-img { width: 100%; height: 100%; object-fit: cover; }
+
+.cat-etiqueta {
+    position: absolute; bottom: 10px; left: 10px;
+    background: rgba(255,255,255,0.9); color: #333;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 0.7rem; text-transform: uppercase; font-weight: bold;
+}
+
+.articulo-info {
+    padding: 20px;
+    display: flex; flex-direction: column; flex-grow: 1;
+}
+
+.articulo-titulo {
+    font-size: 1.1rem; margin: 0 0 10px 0;
+    line-height: 1.4; color: #333;
+}
+.articulo-titulo a:hover { color: var(--color-primario); }
+
+.articulo-extracto {
+    font-size: 0.9rem; color: #666; margin-bottom: 20px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.articulo-footer {
+    margin-top: auto; border-top: 1px solid #f5f5f5;
+    padding-top: 15px; display: flex; justify-content: space-between;
+    align-items: center; font-size: 0.8rem; color: #aaa;
+}
+
+/* Botón leer más simple */
+.btn-leer-simple { 
+    color: var(--color-secundario); font-weight: bold; 
+}
+
+/* Lado Derecho: Sidebar */
+.sidebar {
+    flex: 1; /* Ocupa el 25% */
+    min-width: 250px;
+}
+
+.widget {
+    background: white; padding: 20px; border-radius: 15px;
+    margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+}
+.widget-titulo {
+    margin-top: 0; color: var(--color-primario); 
+    border-bottom: 2px solid #eee; padding-bottom: 10px;
+    margin-bottom: 15px; font-size: 1.1rem;
+}
+.lista-descargas li { margin-bottom: 10px; border-bottom: 1px solid #f9f9f9; padding-bottom: 5px; }
+
+/* --- 5. PÁGINA DE ARTÍCULO INDIVIDUAL --- */
+.contenido-articulo { font-size: 1.1rem; line-height: 1.8; color: #333; }
+.contenido-articulo h3 { color: var(--color-primario); margin-top: 30px; }
+.contenido-articulo ul { margin-left: 20px; margin-bottom: 20px; }
+.breadcrumbs { font-size: 0.9rem; color: #999; margin-bottom: 20px; }
+
+/* Responsivo Blog */
+@media (max-width: 900px) {
+    .contenedor-blog { flex-direction: column; }
+    .sidebar { width: 100%; }
+}
+
+footer {
+    background-color: var(--color-secundario);
+    color: white; text-align: center; padding: 20px; margin-top: auto;
+}
+
+/* ==========================================================
+   6. AGREGADOS RESPONSIVOS PARA PANEL Y ADMIN (NUEVO)
+   ========================================================== */
+
+/* Ajustes generales para formularios en celular */
+input[type="text"], 
+input[type="password"], 
+input[type="email"], 
+textarea, 
+select { 
+    max-width: 100%; 
+    box-sizing: border-box; /* Asegura que el padding no rompa el ancho */
+}
+
+/* Ajustes para Contenedores de Edición */
+.editor-box, 
+.editor-container, 
+.login-box {
+    width: 100% !important;
+    max-width: 1000px; /* Mantiene el límite en PC */
+    box-sizing: border-box;
+}
+
+/* Media Query Específica para Celulares */
+@media (max-width: 600px) {
+    body {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    /* El login no debe tocar los bordes */
+    .login-box {
+        padding: 20px !important;
+    }
+
+    /* Botones ocupan todo el ancho para facilitar el toque */
+    .btn-grande {
+        width: 100%;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+
+    /* Títulos más pequeños */
+    h1, h2 { font-size: 1.5rem; }
+}
+
+/* --- TABLAS RESPONSIVAS (Para listar_articulos.php y listar_juegos.php) --- */
+/* Envuelve tus tablas en un div con clase "table-responsive" si puedes, 
+   o esto aplicará scroll automáticamente si la tabla es muy ancha */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Scroll horizontal */
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Fuerza ancho mínimo para que no se deforme */
+}
+
+table th, table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+table th {
+    background-color: var(--color-secundario);
+    color: white;
+}
+
+table tr:hover { background-color: #f5f5f5; }
+
+/* Botones pequeños dentro de tablas */
+.btn-accion {
+    padding: 6px 12px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-right: 5px;
+    display: inline-block;
+    text-align: center;
+}
+.btn-editar { background: #ffc107; color: #333; }
+.btn-borrar { background: #dc3545; color: white; }
+
+/* --- PANEL DE CONTROL (GRID) --- */
+/* Esto ordena los cuadros del menú principal */
+.panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.panel-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: transform 0.2s;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.panel-card:hover { 
+    transform: translateY(-5px); 
+    border-color: var(--color-primario); 
+}
+.panel-card i { 
+    font-size: 3rem; 
+    color: var(--color-primario); 
+    margin-bottom: 15px; 
+}
+.panel-card h3 { 
+    margin-bottom: 10px; 
+    color: #333; 
+}
