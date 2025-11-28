@@ -43,7 +43,7 @@ $result = $conn->query($sql);
     <title>Mis Artículos</title>
     <link rel="stylesheet" href="../assets/css/estilos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <?php include '../includes/header.php'; ?>
     <style>
         body { background-color: #f4f4f4; display: block; padding: 20px; }
         .container-admin { max-width: 1200px; margin: 0 auto; }

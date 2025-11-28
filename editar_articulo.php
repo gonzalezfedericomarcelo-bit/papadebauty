@@ -27,7 +27,7 @@ if (isset($_GET['id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor de Contenido</title>
     <link rel="stylesheet" href="../assets/css/estilos.css">
-    
+    <?php include '../includes/header.php'; ?>
     <script src="https://cdn.tiny.cloud/1/fsu1zolakhx1ihn2slwt050tc9rgv1jejro3mwbyixxr2coh/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     
         <script src="https://cdn.tiny.cloud/1/fsu1zolakhx1ihn2slwt050tc9rgv1jejro3mwbyixxr2coh/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>

@@ -4,139 +4,112 @@ require 'includes/header.php';
 
 // Validar ID
 if (!isset($_GET['id']) || empty($_GET['id'])) {
-    header("Location: padres.php");
-    exit;
+    header("Location: padres.php"); exit;
 }
-
 $id = intval($_GET['id']);
 
-// Consulta segura
-$stmt = $conn->prepare("SELECT a.*, c.nombre as categoria_nombre 
-                        FROM articulos a 
-                        LEFT JOIN categorias_blog c ON a.id_categoria = c.id 
-                        WHERE a.id = ?");
+$stmt = $conn->prepare("SELECT a.*, c.nombre as categoria_nombre FROM articulos a LEFT JOIN categorias_blog c ON a.id_categoria = c.id WHERE a.id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    echo "<div class='container' style='padding:50px;'><h2>Artículo no encontrado</h2><a href='padres.php' class='btn-grande'>Volver al Blog</a></div>";
-    require 'includes/footer.php'; // Si tenés footer
-    exit;
+    echo "<div style='padding:50px; text-align:center;'><h2>Artículo no encontrado</h2><a href='padres.php' class='btn-grande'>Volver</a></div>";
+    require 'includes/footer.php'; exit;
 }
-
 $articulo = $result->fetch_assoc();
-
-// Corrección de ruta de imagen si es relativa
 $img_bg = $articulo['imagen_destacada'];
-if (strpos($img_bg, 'http') === false) {
-    // Si la ruta ya tiene "assets/", perfecto. Si no, ajustar según tu estructura.
-    // Asumimos que en la BD se guarda como "assets/img/..."
-}
 ?>
 
 <style>
-    /* Estilos específicos para el artículo */
+    /* HERO: Imagen oscura de fondo */
     .hero-articulo {
-        height: 400px;
+        height: 50vh; /* Ocupa mitad de pantalla */
+        min-height: 400px;
         background: url('<?php echo $img_bg; ?>') no-repeat center center/cover;
         position: relative;
         display: flex;
-        align-items: flex-end; /* Alineamos el contenido abajo */
+        align-items: flex-end;
     }
     .hero-overlay {
-        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0; left: 0;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9));
     }
     .hero-content {
-        position: relative;
-        z-index: 2;
-        width: 100%;
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 40px 20px;
+        position: relative; z-index: 2; width: 100%; max-width: 900px;
+        margin: 0 auto; padding: 0 20px 60px; /* 60px padding bottom para dar aire */
         color: white;
-        text-shadow: 1px 1px 10px rgba(0,0,0,0.5);
     }
     
+    /* CAJA DEL CONTENIDO */
     .articulo-container {
         max-width: 900px;
-        margin: -50px auto 50px; /* Subimos un poco, pero menos agresivo */
+        margin: 0 auto 60px; /* Margen abajo */
         background: white;
-        padding: 40px; /* Más espacio interno */
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 50px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         position: relative;
         z-index: 3;
+        margin-top: -40px; /* Sube un poco, pero no tanto para tapar el texto */
     }
 
-    .meta-info {
-        font-size: 0.9rem;
-        color: #ddd;
-        margin-bottom: 10px;
+    .meta-tags {
+        display: flex; gap: 10px; margin-bottom: 15px;
     }
-    .categoria-badge {
-        background: var(--color-secundario, #88B04B);
-        color: white;
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        font-weight: bold;
-        display: inline-block;
-        margin-bottom: 10px;
-    }
-
-    .contenido-body img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 10px;
-        margin: 20px 0;
+    .tag-cat {
+        background: var(--color-primario); color: white; padding: 5px 12px;
+        border-radius: 20px; font-weight: bold; font-size: 0.8rem; text-transform: uppercase;
     }
     
+    /* Tipografía del cuerpo */
     .contenido-body {
-        font-size: 1.1rem;
-        line-height: 1.8;
-        color: #444;
+        font-size: 1.2rem; line-height: 1.8; color: #333;
+    }
+    .contenido-body p { margin-bottom: 20px; }
+    
+    /* Imagen final (la que estaba repetida arriba) */
+    .img-final-referencia {
+        width: 100%; border-radius: 15px; margin-top: 30px;
+        border: 1px solid #eee;
+    }
+
+    @media (max-width: 700px) {
+        .articulo-container { padding: 25px; margin-top: -20px; }
+        .hero-content h1 { font-size: 1.8rem; }
     }
 </style>
 
 <div class="hero-articulo">
     <div class="hero-overlay"></div>
     <div class="hero-content">
-        <?php if($articulo['categoria_nombre']): ?>
-            <span class="categoria-badge"><?php echo $articulo['categoria_nombre']; ?></span>
-        <?php endif; ?>
-        <h1 style="font-size: 2.5rem; margin: 0;"><?php echo $articulo['titulo']; ?></h1>
-        <div class="meta-info">
+        <div class="meta-tags">
+            <span class="tag-cat"><?php echo $articulo['categoria_nombre']; ?></span>
+        </div>
+        <h1 style="font-size: 2.5rem; font-weight: 800; margin: 0 0 10px 0; line-height: 1.2;">
+            <?php echo $articulo['titulo']; ?>
+        </h1>
+        <div style="font-size: 0.95rem; opacity: 0.9;">
             <i class="fa-regular fa-calendar"></i> <?php echo date("d/m/Y", strtotime($articulo['fecha_publicacion'])); ?> 
-            | Por <strong><?php echo $articulo['autor']; ?></strong>
+            &nbsp;|&nbsp; 
+            <i class="fa-regular fa-user"></i> Por <?php echo $articulo['autor']; ?>
         </div>
     </div>
 </div>
 
 <div class="articulo-container">
-    
-    <a href="padres.php" style="text-decoration: none; color: #888; font-weight: bold; display: inline-block; margin-bottom: 20px;">
-        <i class="fa-solid fa-arrow-left"></i> Volver a Recursos
+    <a href="padres.php" style="display:inline-block; margin-bottom: 30px; color: #888; font-weight: bold;">
+        <i class="fa-solid fa-arrow-left"></i> Volver al Blog
     </a>
 
     <div class="contenido-body">
-        <img src="<?php echo $img_bg; ?>" alt="<?php echo $articulo['titulo']; ?>" style="width: 100%; max-height: 500px; object-fit: cover; margin-bottom: 30px;">
-        
         <?php echo $articulo['contenido']; ?>
-    </div>
 
-    <hr style="margin: 40px 0; border: 0; border-top: 1px solid #eee;">
-    <div style="text-align: center;">
-        <h3>¿Te gustó este artículo?</h3>
-        <p>Explorá más recursos en nuestra sección para padres.</p>
-        <a href="padres.php" class="btn-grande btn-jugar">Ver más artículos</a>
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="font-size: 0.9rem; color: #999; text-align: center;">Imagen de referencia del artículo:</p>
+            <img src="<?php echo $img_bg; ?>" alt="Referencia" class="img-final-referencia">
+        </div>
     </div>
 </div>
 
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

@@ -2,257 +2,229 @@
 require 'includes/db_connect.php';
 require 'includes/header.php';
 
-// --- LÓGICA DE BÚSQUEDA ---
+// --- CONFIGURACIÓN PAGINACIÓN ---
+$articulos_por_pagina = 15;
+$pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+if ($pagina_actual < 1) $pagina_actual = 1;
+$offset = ($pagina_actual - 1) * $articulos_por_pagina;
+
+// --- FILTROS ---
 $where = "WHERE 1=1";
-$busqueda = "";
+$parametros_url = ""; // Para mantener los filtros al cambiar de página
 
 if (isset($_GET['busqueda']) && !empty($_GET['busqueda'])) {
     $busqueda = $conn->real_escape_string($_GET['busqueda']);
     $where .= " AND (titulo LIKE '%$busqueda%' OR contenido LIKE '%$busqueda%')";
+    $parametros_url .= "&busqueda=" . urlencode($_GET['busqueda']);
 }
-
 if (isset($_GET['cat']) && !empty($_GET['cat'])) {
     $cat_id = intval($_GET['cat']);
     $where .= " AND id_categoria = $cat_id";
+    $parametros_url .= "&cat=" . $cat_id;
 }
 
+// 1. CONTAR TOTAL DE ARTÍCULOS (Para saber cuántas páginas son)
+$sql_count = "SELECT COUNT(*) as total FROM articulos a $where";
+$total_articulos = $conn->query($sql_count)->fetch_assoc()['total'];
+$total_paginas = ceil($total_articulos / $articulos_por_pagina);
+
+// 2. CONSULTA CON LÍMITE (Para mostrar solo 20)
 $sql = "SELECT a.*, c.nombre as categoria_nombre 
         FROM articulos a 
         LEFT JOIN categorias_blog c ON a.id_categoria = c.id 
         $where 
-        ORDER BY fecha_publicacion DESC";
+        ORDER BY fecha_publicacion DESC 
+        LIMIT $offset, $articulos_por_pagina";
 $result = $conn->query($sql);
 ?>
 
 <style>
-    /* VARIABLES DE COLOR (Tu paleta) */
-    :root {
-        --color-titulo: #92A8D1; /* El Celeste/Lila de tu foto */
-        --color-subtitulo: #7f8c8d;
-        --fondo-body: #fdfdfd;
-        --color-verde: #88B04B;
+    /* HEADERS */
+    .blog-header {
+        text-align: center; padding: 60px 20px; background: #fff;
+        margin-bottom: 40px; border-bottom: 1px solid #eee;
+    }
+    .blog-header h1 { font-size: 3rem; color: var(--color-primario); margin-bottom: 10px; font-weight: 800; }
+    .blog-header p { color: #888; font-size: 1.2rem; }
+
+    /* LAYOUT */
+    .blog-layout {
+        max-width: 1300px; margin: 0 auto; padding: 0 20px;
+        display: grid; grid-template-columns: 3fr 1fr; gap: 40px;
     }
 
-    body { background-color: var(--fondo-body); }
-
-    /* --- 1. ENCABEZADO EXACTO A LA FOTO --- */
-    .header-blog-top {
-        text-align: center;
-        padding-top: 60px;
-        padding-bottom: 40px;
-        background-color: #fff; /* Fondo blanco puro */
-        width: 100%;
-        margin-bottom: 50px; /* Espacio antes de los artículos */
+    /* CARDS (Forzando 3 columnas en espacio disponible) */
+    .posts-grid { 
+        display: grid; 
+        /* Ajuste clave: 220px permite que entren 3 en la columna ancha */
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+        gap: 25px; 
     }
-
-    .header-blog-top h1 {
-        color: var(--color-titulo); /* Color exacto de la imagen */
-        font-size: 2.5rem;
-        font-weight: 800; /* Letra bien gruesa */
-        margin: 0 0 10px 0;
-        letter-spacing: 0.5px;
+    
+    .post-card {
+        background: white; border-radius: 20px; overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s;
+        display: flex; flex-direction: column; border: 1px solid #f0f0f0; height: 100%;
     }
+    .post-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(146, 168, 209, 0.2); border-color: var(--color-primario); }
+    
+    .post-img { height: 180px; object-fit: cover; width: 100%; transition: 0.3s; }
+    .post-card:hover .post-img { opacity: 0.9; }
 
-    .header-blog-top p {
-        color: var(--color-subtitulo); /* Gris suave */
-        font-size: 1.1rem;
-        margin: 0;
-        font-weight: 400;
-    }
+    .post-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+    .post-cat { color: var(--color-primario); font-weight: bold; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 8px; }
+    
+    .post-title { font-size: 1.1rem; margin: 0 0 15px 0; line-height: 1.4; font-weight: 800; }
+    .post-title a { text-decoration: none; color: #444; transition: 0.2s; }
+    .post-title a:hover { color: var(--color-primario); }
 
-    /* --- 2. ESTRUCTURA DE 3 COLUMNAS --- */
-    .contenedor-principal {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-        display: flex;
-        gap: 40px;
-        align-items: flex-start;
+    .post-btn { 
+        margin-top: auto; background-color: var(--color-primario); color: white; 
+        font-weight: 800; text-decoration: none; padding: 8px 20px; border-radius: 50px; 
+        display: inline-block; text-align: center; transition: 0.3s; font-size: 0.9rem;
+        box-shadow: 0 4px 10px rgba(146, 168, 209, 0.3);
     }
+    .post-btn:hover { background-color: #7fa1c3; transform: translateY(-2px); }
 
-    /* GRILLA DE ARTÍCULOS */
-    .grid-articulos {
-        flex: 3; /* Ocupa la mayor parte */
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); /* 3 COLUMNAS SIEMPRE */
-        gap: 30px;
+    /* PAGINACIÓN BURBUJA */
+    .pagination-container {
+        margin-top: 50px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
     }
-
-    .card-post {
-        background: white;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        transition: transform 0.2s;
-        display: flex;
-        flex-direction: column;
-        border: 1px solid #f0f0f0;
+    .page-bubble {
+        width: 45px; height: 45px; border-radius: 50%; 
+        background: white; border: 2px solid #eee;
+        display: flex; align-items: center; justify-content: center;
+        color: #666; font-weight: bold; text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto rebote */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
-    .card-post:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    .page-bubble:hover {
+        transform: scale(1.15); border-color: var(--color-primario); color: var(--color-primario);
+    }
+    .page-bubble.active {
+        background: var(--color-primario); color: white; border-color: var(--color-primario);
+        transform: scale(1.1); box-shadow: 0 5px 15px rgba(146, 168, 209, 0.4);
+    }
+    /* Flechas rectangulares redondeadas */
+    .page-nav {
+        padding: 0 20px; border-radius: 25px; width: auto;
     }
 
-    .card-img {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-    }
+    /* SIDEBAR */
+    .sidebar-box { background: white; padding: 25px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #eee; }
+    .sidebar-title { font-size: 1.2rem; margin-bottom: 15px; color: #444; border-bottom: 2px solid #f5f5f5; padding-bottom: 10px; font-weight: 800; }
+    
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: #f8f9fa; padding: 5px 12px; border-radius: 20px; color: #666; font-size: 0.85rem; text-decoration: none; transition: 0.2s; }
+    .tag:hover { background: var(--color-primario); color: white; }
 
-    .card-content {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-
-    .card-cat {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        color: var(--color-titulo);
-        font-weight: bold;
-        margin-bottom: 8px;
-    }
-
-    .card-titulo {
-        font-size: 1.1rem;
-        margin: 0 0 10px 0;
-        color: #333;
-        line-height: 1.4;
-        font-weight: 700;
-    }
-
-    .card-link {
-        margin-top: auto;
-        color: var(--color-verde);
-        font-weight: bold;
-        text-decoration: none;
-        font-size: 0.9rem;
-    }
-
-    /* SIDEBAR (Derecha) */
-    .sidebar {
-        flex: 1;
-        min-width: 280px;
-    }
-
-    .widget {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        margin-bottom: 30px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-        border: 1px solid #f0f0f0;
-    }
-    .widget h3 {
-        margin-top: 0;
-        color: #555;
-        font-size: 1.1rem;
-        margin-bottom: 15px;
-        font-weight: 700;
-        border-bottom: 2px solid #f5f5f5;
-        padding-bottom: 10px;
-    }
-
-    /* Buscador */
-    .form-busqueda { display: flex; }
-    .form-busqueda input {
-        width: 100%; padding: 10px;
-        border: 1px solid #ddd; border-radius: 8px 0 0 8px;
-        outline: none; background: #fdfdfd;
-    }
-    .form-busqueda button {
-        padding: 0 15px; background: var(--color-titulo);
-        color: white; border: none; border-radius: 0 8px 8px 0; cursor: pointer;
-    }
-
-    /* Botones de Categoría */
-    .lista-cats { display: flex; flex-wrap: wrap; gap: 8px; }
-    .btn-cat {
-        padding: 6px 12px;
-        background: #f4f4f4;
-        color: #666;
-        text-decoration: none;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        transition: 0.2s;
-    }
-    .btn-cat:hover, .btn-cat.active {
-        background: var(--color-verde);
-        color: white;
-    }
-
-    /* RESPONSIVE */
     @media (max-width: 900px) {
-        .grid-articulos { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 700px) {
-        .contenedor-principal { flex-direction: column; }
-        .grid-articulos { grid-template-columns: 1fr; }
+        .blog-layout { grid-template-columns: 1fr; }
+        .posts-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
     }
 </style>
 
-<div class="header-blog-top">
-    <h1>Blog y Recursos</h1>
-    <p>Herramientas terapéuticas y guías para la familia.</p>
+<div class="blog-header">
+    <h1>Blog para Padres</h1>
+    <p>Recursos, historias y herramientas para el día a día.</p>
 </div>
 
-<div class="contenedor-principal">
-
-    <div class="grid-articulos">
-        <?php if ($result->num_rows > 0): ?>
-            <?php while($row = $result->fetch_assoc()): ?>
-                <div class="card-post">
-                    <a href="articulo.php?id=<?php echo $row['id']; ?>">
-                        <img src="<?php echo $row['imagen_destacada']; ?>" class="card-img" alt="Imagen">
-                    </a>
-                    <div class="card-content">
-                        <span class="card-cat"><?php echo $row['categoria_nombre']; ?></span>
-                        <h3 class="card-titulo">
-                            <a href="articulo.php?id=<?php echo $row['id']; ?>" style="text-decoration:none; color:inherit;">
-                                <?php echo $row['titulo']; ?>
+<div class="blog-layout">
+    
+    <div>
+        <div class="posts-grid">
+            <?php if ($result->num_rows > 0): ?>
+                <?php while($row = $result->fetch_assoc()): ?>
+                    <div class="post-card">
+                        <a href="articulo.php?id=<?php echo $row['id']; ?>" style="display:block;">
+                            <img src="<?php echo !empty($row['imagen_destacada']) ? $row['imagen_destacada'] : 'assets/img/papaybau.jpg'; ?>" class="post-img" alt="Imagen">
+                        </a>
+                        <div class="post-body">
+                            <span class="post-cat"><?php echo $row['categoria_nombre']; ?></span>
+                            <h3 class="post-title">
+                                <a href="articulo.php?id=<?php echo $row['id']; ?>"><?php echo $row['titulo']; ?></a>
+                            </h3>
+                            <a href="articulo.php?id=<?php echo $row['id']; ?>" class="post-btn">
+                                Leer artículo <i class="fa-solid fa-arrow-right" style="margin-left:5px;"></i>
                             </a>
-                        </h3>
-                        <a href="articulo.php?id=<?php echo $row['id']; ?>" class="card-link">Leer nota completa →</a>
+                        </div>
                     </div>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <div style="grid-column: 1/-1; text-align: center; padding: 50px;">
+                    <h3>No encontramos artículos.</h3>
+                    <a href="padres.php" class="btn-grande">Ver todos</a>
                 </div>
-            <?php endwhile; ?>
-        <?php else: ?>
-            <div style="grid-column: 1 / -1; text-align: center; color: #999; padding: 40px;">
-                <h3>No hay artículos aquí.</h3>
-                <a href="padres.php" style="color: var(--color-titulo);">Ver todos</a>
-            </div>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($total_paginas > 1): ?>
+        <div class="pagination-container">
+            
+            <?php if ($pagina_actual > 1): ?>
+                <a href="?pagina=<?php echo $pagina_actual - 1; ?><?php echo $parametros_url; ?>" class="page-bubble page-nav">
+                    <i class="fa-solid fa-chevron-left"></i> &nbsp; Anterior
+                </a>
+            <?php endif; ?>
+
+            <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
+                <a href="?pagina=<?php echo $i; ?><?php echo $parametros_url; ?>" 
+                   class="page-bubble <?php echo ($i == $pagina_actual) ? 'active' : ''; ?>">
+                   <?php echo $i; ?>
+                </a>
+            <?php endfor; ?>
+
+            <?php if ($pagina_actual < $total_paginas): ?>
+                <a href="?pagina=<?php echo $pagina_actual + 1; ?><?php echo $parametros_url; ?>" class="page-bubble page-nav">
+                    Siguiente &nbsp; <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            <?php endif; ?>
+
+        </div>
         <?php endif; ?>
     </div>
 
-    <aside class="sidebar">
-        
-        <div class="widget">
-            <h3>Buscar</h3>
-            <form action="padres.php" method="GET" class="form-busqueda">
-                <input type="text" name="busqueda" placeholder="Buscar..." value="<?php echo htmlspecialchars($busqueda); ?>">
-                <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+    <aside>
+        <div class="sidebar-box">
+            <h4 class="sidebar-title">Buscar</h4>
+            <form action="padres.php" method="GET" style="display: flex;">
+                <input type="text" name="busqueda" placeholder="Tema..." style="width: 100%; border: 1px solid #ddd; border-right: none; padding: 10px; border-radius: 5px 0 0 5px; outline:none;">
+                <button type="submit" style="background: var(--color-primario); color: white; border: none; padding: 0 15px; border-radius: 0 5px 5px 0; cursor: pointer;"><i class="fa-solid fa-magnifying-glass"></i></button>
             </form>
         </div>
 
-        <div class="widget">
-            <h3>Temas</h3>
-            <div class="lista-cats">
-                <a href="padres.php" class="btn-cat">Todos</a>
+        <div class="sidebar-box">
+            <h4 class="sidebar-title">Temas</h4>
+            <div class="tag-cloud">
+                <a href="padres.php" class="tag">Todos</a>
                 <?php
                 $cats = $conn->query("SELECT * FROM categorias_blog");
                 while($c = $cats->fetch_assoc()) {
-                    $active = (isset($_GET['cat']) && $_GET['cat'] == $c['id']) ? 'active' : '';
-                    echo "<a href='padres.php?cat=".$c['id']."' class='btn-cat $active'>".$c['nombre']."</a>";
+                    $activa = (isset($_GET['cat']) && $_GET['cat'] == $c['id']) ? 'background: #FFDAC1; color:#fff;' : '';
+                    echo "<a href='padres.php?cat=".$c['id']."' class='tag' style='$activa'>".$c['nombre']."</a>";
                 }
                 ?>
             </div>
         </div>
-
+        
+        <div class="sidebar-box">
+            <h4 class="sidebar-title">Recomendados</h4>
+            <ul style="list-style:none; padding:0; margin:0;">
+                <?php 
+                $rec = $conn->query("SELECT id, titulo FROM articulos ORDER BY RAND() LIMIT 3");
+                while($r = $rec->fetch_assoc()): ?>
+                    <li style="margin-bottom:10px; border-bottom:1px solid #f5f5f5; padding-bottom:5px;">
+                        <a href="articulo.php?id=<?php echo $r['id']; ?>" style="text-decoration:none; color:#555; font-size:0.9rem; font-weight:600;">
+                            <?php echo $r['titulo']; ?>
+                        </a>
+                    </li>
+                <?php endwhile; ?>
+            </ul>
+        </div>
     </aside>
 
 </div>
 
-<div style="height: 50px;"></div>
+<div style="height: 60px;"></div>
 
 <?php require 'includes/footer.php'; ?>
